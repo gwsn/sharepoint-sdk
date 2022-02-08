@@ -9,8 +9,11 @@ use GWSN\Microsoft\ApiConnector;
 class DriveService
 {
 
-    /** @var ApiConnector|null */
+    /** @var ApiConnector|null $apiConnector */
     private ?ApiConnector $apiConnector;
+
+    /** @var string $driveId */
+    private string $driveId;
 
 
     /**
@@ -25,10 +28,44 @@ class DriveService
     )
     {
 
-        $apiConnector = new ApiConnector($accessToken, $requestTimeout, $verify);
-        $this->apiConnector = $apiConnector;
+        $this->setApiConnector(new ApiConnector($accessToken, $requestTimeout, $verify));
     }
 
+    /**
+     * @return ApiConnector|null
+     */
+    public function getApiConnector(): ?ApiConnector
+    {
+        return $this->apiConnector;
+    }
+
+    /**
+     * @param ApiConnector|null $apiConnector
+     * @return DriveService
+     */
+    public function setApiConnector(?ApiConnector $apiConnector): DriveService
+    {
+        $this->apiConnector = $apiConnector;
+        return $this;
+    }
+
+    /**
+     * @return string
+     */
+    public function getDriveId(): string
+    {
+        return $this->driveId;
+    }
+
+    /**
+     * @param string $driveId
+     * @return DriveService
+     */
+    public function setDriveId(string $driveId): DriveService
+    {
+        $this->driveId = $driveId;
+        return $this;
+    }
     /**
      * @param string $sharepointSiteId
      * @return array
@@ -73,7 +110,7 @@ class DriveService
      * @return array
      * @throws Exception
      */
-    public function requestResourceMetadata(string $driveId, ?string $path = null, ?string $itemId = null): ?array
+    public function requestResourceMetadata(?string $path = null, ?string $itemId = null): ?array
     {
         if ($path === null && $itemId === null) {
             throw new \Exception('Microsoft SP Drive Request: Not all the parameters are correctly set. ' . __FUNCTION__, 2131);
@@ -83,11 +120,11 @@ class DriveService
         // /drives/{drive-id}/root:/{item-path}
         // https://docs.microsoft.com/en-us/graph/api/driveitem-get?view=graph-rest-1.0&tabs=http
         $path = ltrim($path, '/');
-        $url = sprintf('/v1.0/drives/%s/root:/%s', $driveId, $path);
+        $url = sprintf('/v1.0/drives/%s/root:/%s', $this->getDriveId(), $path);
 
         // Overwrite if itemId is set
         if ($itemId !== null) {
-            $url = sprintf('/v1.0/drives/%s/items/%s', $driveId, $itemId);
+            $url = sprintf('/v1.0/drives/%s/items/%s', $this->getDriveId(), $itemId);
         }
 
         $response = $this->apiConnector->request('GET', $url);
@@ -104,15 +141,14 @@ class DriveService
     }
 
     /**
-     * @param string $driveId
      * @param string|null $path
      * @param string|null $itemId
      * @return bool
      * @throws Exception
      */
-    public function checkResourceExists(string $driveId, ?string $path = null, ?string $itemId = null): bool
+    public function checkResourceExists(?string $path = null, ?string $itemId = null): bool
     {
-        $fileMetaData = $this->requestResourceMetadata($driveId, $path, $itemId);
+        $fileMetaData = $this->requestResourceMetadata($path, $itemId);
 
         return ($fileMetaData !== null);
     }
