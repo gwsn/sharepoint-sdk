@@ -31,7 +31,11 @@
     }
   },
   "scripts": {
-    "unit-test": "vendor/bin/phpunit"
+    "test": [
+      "Composer\\Config::disableProcessTimeout",
+      "vendor/bin/phpunit"
+    ],
+    "unit-test": "@test"
   },
   "config": {
     "sort-packages": true
