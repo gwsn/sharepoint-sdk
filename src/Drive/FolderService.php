@@ -9,10 +9,11 @@ use GWSN\Microsoft\ApiConnector;
 
 class FolderService
 {
-
-    /** @var ApiConnector|null */
+    /** @var ApiConnector|null $apiConnector */
     private ?ApiConnector $apiConnector;
 
+    /** @var string $driveId */
+    private string $driveId;
 
     /**
      * @param string $accessToken
@@ -21,24 +22,60 @@ class FolderService
      */
     public function __construct(
         string $accessToken,
+        string $driveId,
         int    $requestTimeout = 60,
         bool   $verify = true
     )
     {
+        $this->setApiConnector(new ApiConnector($accessToken, $requestTimeout, $verify));
+        $this->setDriveId($driveId);
+    }
 
-        $apiConnector = new ApiConnector($accessToken, $requestTimeout, $verify);
+    /**
+     * @return ApiConnector|null
+     */
+    public function getApiConnector(): ?ApiConnector
+    {
+        return $this->apiConnector;
+    }
+
+    /**
+     * @param ApiConnector|null $apiConnector
+     * @return FolderService
+     */
+    public function setApiConnector(?ApiConnector $apiConnector): FolderService
+    {
         $this->apiConnector = $apiConnector;
+        return $this;
+    }
+
+    /**
+     * @return string
+     */
+    public function getDriveId(): string
+    {
+        return $this->driveId;
     }
 
     /**
      * @param string $driveId
+     * @return FolderService
+     */
+    public function setDriveId(string $driveId): FolderService
+    {
+        $this->driveId = $driveId;
+        return $this;
+    }
+
+
+    /**
      * @param string|null $path
      * @param string|null $itemId
      * @param string|null $suffix
      * @return string
      * @throws Exception
      */
-    private function getFolderBaseUrl(string $driveId, ?string $path = '/', ?string $itemId = null, ?string $suffix = null): string
+    private function getFolderBaseUrl(?string $path = '/', ?string $itemId = null, ?string $suffix = null): string
     {
         if ($path === null && $itemId === null) {
             throw new \Exception('Microsoft SP Drive Request: Not all the parameters are correctly set. ' . __FUNCTION__, 2311);
@@ -48,29 +85,28 @@ class FolderService
         // /drives/{drive-id}/root:/{item-path}
         // https://docs.microsoft.com/en-us/graph/api/driveitem-get?view=graph-rest-1.0&tabs=http
         if ($itemId !== null) {
-            return sprintf('/v1.0/drives/%s/items/%s%s', $driveId, $itemId, ($suffix ?? ''));
+            return sprintf('/v1.0/drives/%s/items/%s%s', $this->getDriveId(), $itemId, ($suffix ?? ''));
         }
 
         if ($path === '/' || $path === '') {
-            return sprintf('/v1.0/drives/%s/items/root%s', $driveId, ($suffix ?? ''));
+            return sprintf('/v1.0/drives/%s/items/root%s', $this->getDriveId(), ($suffix ?? ''));
         }
 
         $path = ltrim($path, '/');
-        return sprintf('/v1.0/drives/%s/items/root:/%s%s', $driveId, $path, ($suffix !== null ? ':'.$suffix : ''));
+        return sprintf('/v1.0/drives/%s/items/root:/%s%s', $this->getDriveId(), $path, ($suffix !== null ? ':'.$suffix : ''));
     }
 
     /**
      * List all items in a specific folder
      *
-     * @param string $driveId
      * @param string|null $folder
      * @param string|null $itemId
      * @return array
      * @throws Exception
      */
-    public function requestFolderItems(string $driveId, ?string $folder = '/', ?string $itemId = null): array
+    public function requestFolderItems(?string $folder = '/', ?string $itemId = null): array
     {
-        $url = $this->getFolderBaseUrl($driveId, $folder, $itemId, '/children');
+        $url = $this->getFolderBaseUrl($folder, $itemId, '/children');
 
         // /sites/{siteId}/drive
         $response = $this->apiConnector->request('GET', $url);
@@ -87,15 +123,14 @@ class FolderService
     /**
      * Read the folder metadata and so check if it exists
      *
-     * @param string $driveId
      * @param string|null $folder
      * @param string|null $itemId
      * @return array
      * @throws Exception
      */
-    public function requestFolderMetadata(string $driveId, ?string $folder = null, ?string $itemId = null): ?array
+    public function requestFolderMetadata(?string $folder = null, ?string $itemId = null): ?array
     {
-        $url = $this->getFolderBaseUrl($driveId, $folder, $itemId);
+        $url = $this->getFolderBaseUrl($folder, $itemId);
 
         $response = $this->apiConnector->request('GET', $url);
 
@@ -112,15 +147,14 @@ class FolderService
 
 
     /**
-     * @param string $driveId
      * @param string|null $folder
      * @param string|null $itemId
      * @return bool
      * @throws Exception
      */
-    public function checkFolderExists(string $driveId, ?string $folder = null, ?string $itemId = null): bool
+    public function checkFolderExists(?string $folder = null, ?string $itemId = null): bool
     {
-        $folderMetaData = $this->requestFolderMetadata($driveId, $folder, $itemId);
+        $folderMetaData = $this->requestFolderMetadata($folder, $itemId);
 
         if (isset($folderMetaData['file'])) {
             throw new \Exception('Check for file exists but path is actually a folder', 2231);
@@ -130,12 +164,12 @@ class FolderService
     }
 
     /**
-     * @param string $driveId
      * @param string|null $folder
+     * @param string|null $parentFolderId
      * @return array|null
      * @throws Exception
      */
-    public function createFolder(string $driveId, ?string $folder = null, ?string $parentFolderId = null): ?array
+    public function createFolder(?string $folder = null, ?string $parentFolderId = null): ?array
     {
         if($folder === '/') {
             throw new \Exception('Cannot create the root folder, this already exists', 2351);
@@ -148,14 +182,14 @@ class FolderService
 
         // build url to fetch the parentItemId if not provided
         if($parentFolderId === null) {
-            $parentFolderMeta = $this->requestFolderMetadata($driveId, sprintf('/%s', ltrim(implode('/', $parent), '/')));
+            $parentFolderMeta = $this->requestFolderMetadata(sprintf('/%s', ltrim(implode('/', $parent), '/')));
             if($parentFolderMeta === null) {
                 throw new \Exception('Parent folder does not exists', 2352);
             }
             $parentFolderId = $parentFolderMeta['id'];
         }
 
-        $url = $this->getFolderBaseUrl($driveId, null, $parentFolderId, '/children');
+        $url = $this->getFolderBaseUrl(null, $parentFolderId, '/children');
 
         // Build request
         $body = [
@@ -167,7 +201,6 @@ class FolderService
             $response = $this->apiConnector->request('POST', $url, [], [], null, [
                 RequestOptions::JSON => $body
             ]);
-            var_dump($response);
 
             return $response;
         } catch (\Exception $exception) {
@@ -176,13 +209,12 @@ class FolderService
     }
 
     /**
-     * @param string $driveId
      * @param string|null $folder
      * @param string|null $itemId
      * @return bool
      * @throws Exception
      */
-    public function createFolderRecursive(string $driveId, ?string $folder = null, ?string $itemId = null): ?array
+    public function createFolderRecursive(?string $folder = null): ?array
     {
         $pathParts = explode("/", $folder);
 
@@ -191,14 +223,14 @@ class FolderService
         $createFolderResponse = null;
         foreach($pathParts as $path) {
             $buildPath .= $path;
-            $folderMeta = $this->requestFolderMetadata($driveId, $buildPath);
+            $folderMeta = $this->requestFolderMetadata($buildPath);
 
             if($folderMeta !== null) {
                 $parentFolderId = $folderMeta['id'];
                 continue;
             }
 
-            $createFolderResponse = $this->createFolder($driveId, $buildPath, $parentFolderId);
+            $createFolderResponse = $this->createFolder($buildPath, $parentFolderId);
             if($createFolderResponse === null) {
                 throw new \Exception(sprintf('Cannot create recursive the folder %s', $buildPath), 2361);
             }
@@ -210,15 +242,14 @@ class FolderService
     }
 
     /**
-     * @param string $driveId
      * @param string|null $folder
      * @param string|null $itemId
      * @return bool
      * @throws Exception
      */
-    public function deleteFile(string $driveId, ?string $folder = null, ?string $itemId = null): bool
+    public function deleteFile(?string $folder = null, ?string $itemId = null): bool
     {
-        $url = $this->getFolderBaseUrl($driveId, $folder, $itemId);
+        $url = $this->getFolderBaseUrl($folder, $itemId);
 
         try {
             $this->apiConnector->request('DELETE', $url);
