@@ -247,7 +247,7 @@ class FolderService
      * @return bool
      * @throws Exception
      */
-    public function deleteFile(?string $folder = null, ?string $itemId = null): bool
+    public function deleteFolder(?string $folder = null, ?string $itemId = null): bool
     {
         $url = $this->getFolderBaseUrl($folder, $itemId);
 
