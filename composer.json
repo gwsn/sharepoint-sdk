@@ -2,7 +2,7 @@
   "name": "gwsn/sharepoint-sdk",
   "description": "Connect to sharepoint drive with PHP",
   "license": "MIT",
-  "homepage": "https://github.com/gwsn/packages/flysystem-sharepoint-adapter",
+  "homepage": "https://github.com/gwsn/sharepoint-sdk",
   "keywords": [
     "flysystem",
     "sharepoint"
@@ -18,7 +18,6 @@
     "guzzlehttp/guzzle": "^7.4"
   },
   "require-dev": {
-    "league/flysystem-adapter-test-utilities": "^3.0",
     "phpunit/phpunit": "^9.5"
   },
   "autoload": {
