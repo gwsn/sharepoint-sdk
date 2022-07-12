@@ -108,6 +108,11 @@ class FolderService
     {
         $url = $this->getFolderBaseUrl($folder, $itemId, '/children');
 
+        $exists = $this->checkFolderExists($folder, $itemId);
+        if ( ! $exists ) {
+            throw new \Exception('Microsoft SP Drive Request: Cannot get folder items for folder that not exists, please create the folder first!. ' . __FUNCTION__, 2321);
+        }
+
         // /sites/{siteId}/drive
         $response = $this->apiConnector->request('GET', $url);
 
