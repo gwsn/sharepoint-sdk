@@ -194,7 +194,7 @@ class FolderService
         // Build request
         $body = [
             'name' => $folderName,
-            'folder' => []
+            'folder' => new \stdClass()
         ];
 
         try {
@@ -231,8 +231,9 @@ class FolderService
             }
 
             $createFolderResponse = $this->createFolder($buildPath, $parentFolderId);
-            if($createFolderResponse === null) {
-                throw new \Exception(sprintf('Cannot create recursive the folder %s', $buildPath), 2361);
+            if($createFolderResponse === null || !isset($createFolderResponse['id'])) {
+                $errorMessage = (isset($createFolderResponse['error'], $createFolderResponse['error']['message']) ? $createFolderResponse['error']['message'] : '');
+                throw new \Exception(sprintf('Cannot create recursive the folder %s, errorMessage: %s', $buildPath, $errorMessage), 2361);
             }
 
             $parentFolderId = $createFolderResponse['id'];
