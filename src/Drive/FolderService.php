@@ -101,15 +101,16 @@ class FolderService
      *
      * @param string|null $folder
      * @param string|null $itemId
+     * @param string|null $suffix
      * @return array
      * @throws Exception
      */
-    public function requestFolderItems(?string $folder = '/', ?string $itemId = null): array
+    public function requestFolderItems(?string $folder = '/', ?string $itemId = null, ?string $suffix = '/children'): array
     {
-        $url = $this->getFolderBaseUrl($folder, $itemId, '/children');
+        $url = $this->getFolderBaseUrl($folder, $itemId, $suffix);
 
         $exists = $this->checkFolderExists($folder, $itemId);
-        if ( ! $exists ) {
+        if (! $exists) {
             throw new \Exception('Microsoft SP Drive Request: Cannot get folder items for folder that not exists, please create the folder first!. ' . __FUNCTION__, 2321);
         }
 
@@ -117,7 +118,7 @@ class FolderService
         $response = $this->apiConnector->request('GET', $url);
 
 
-        if ( ! isset($response['value'])) {
+        if (! isset($response['value'])) {
             throw new \Exception('Microsoft SP Drive Request: Cannot parse the body of the sharepoint drive request. ' . __FUNCTION__, 2321);
         }
 
@@ -143,7 +144,7 @@ class FolderService
             return null;
         }
 
-        if ( ! isset($response['id'], $response['name'], $response['webUrl'])) {
+        if (! isset($response['id'], $response['name'], $response['webUrl'])) {
             throw new \Exception('Microsoft SP Drive Request: Cannot parse the body of the sharepoint drive request. ' . __FUNCTION__, 2331);
         }
 
@@ -181,7 +182,7 @@ class FolderService
         }
 
         // Explode the path
-        $parent = explode( '/', $folder);
+        $parent = explode('/', $folder);
         $folderName = array_pop($parent);
 
 
