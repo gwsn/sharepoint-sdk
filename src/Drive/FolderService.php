@@ -106,6 +106,7 @@ class FolderService
      */
     public function requestFolderItems(?string $folder = '/', ?string $itemId = null): array
     {
+        // /sites/{siteId}/drive
         $url = $this->getFolderBaseUrl($folder, $itemId, '/children');
 
         $exists = $this->checkFolderExists($folder, $itemId);
@@ -113,17 +114,35 @@ class FolderService
             throw new \Exception('Microsoft SP Drive Request: Cannot get folder items for folder that not exists, please create the folder first!. ' . __FUNCTION__, 2321);
         }
 
-        // /sites/{siteId}/drive
-        $response = $this->apiConnector->request('GET', $url);
+        return $this->requestAllItems($url);
+    }
 
+    /**
+     * Get all items from a url
+     *
+     * @param string $url
+     * @return array
+     * @throws Exception
+     */
+    public function requestAllItems(string $url): ?array
+    {
+        $response = $this->apiConnector->request('GET', $url);
 
         if ( ! isset($response['value'])) {
             throw new \Exception('Microsoft SP Drive Request: Cannot parse the body of the sharepoint drive request. ' . __FUNCTION__, 2321);
         }
 
-        return $response['value'];
-    }
+        $results = $response['value'];
 
+        if (isset($response['@odata.nextLink'])) {
+            $results = [
+                ...$response['value'],
+                ...$this->requestAllItems($response['@odata.nextLink'])
+            ];
+        }
+
+        return $results;
+    }
 
     /**
      * Read the folder metadata and so check if it exists
