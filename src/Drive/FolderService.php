@@ -227,7 +227,7 @@ class FolderService
         $parentFolderId = null;
         $createFolderResponse = null;
         foreach($pathParts as $path) {
-            $buildPath .= $path;
+            $buildPath = sprintf('%s/%s', $buildPath, $path);
             $folderMeta = $this->requestFolderMetadata($buildPath);
 
             if($folderMeta !== null) {
