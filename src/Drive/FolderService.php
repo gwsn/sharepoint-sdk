@@ -118,33 +118,6 @@ class FolderService
     }
 
     /**
-     * Get all items from a url
-     *
-     * @param string $url
-     * @return array
-     * @throws Exception
-     */
-    public function requestAllItems(string $url): ?array
-    {
-        $response = $this->apiConnector->request('GET', $url);
-
-        if ( ! isset($response['value'])) {
-            throw new \Exception('Microsoft SP Drive Request: Cannot parse the body of the sharepoint drive request. ' . __FUNCTION__, 2321);
-        }
-
-        $results = $response['value'];
-
-        if (isset($response['@odata.nextLink'])) {
-            $results = [
-                ...$response['value'],
-                ...$this->requestAllItems($response['@odata.nextLink'])
-            ];
-        }
-
-        return $results;
-    }
-
-    /**
      * Read the folder metadata and so check if it exists
      *
      * @param string|null $folder
@@ -283,4 +256,32 @@ class FolderService
             return false;
         }
     }
+
+    /**
+     * Get all items from a url
+     *
+     * @param string $url
+     * @return array
+     * @throws Exception
+     */
+    private function requestAllItems(string $url): ?array
+    {
+        $response = $this->apiConnector->request('GET', $url);
+
+        if ( ! isset($response['value'])) {
+            throw new \Exception('Microsoft SP Drive Request: Cannot parse the body of the sharepoint drive request. ' . __FUNCTION__, 2321);
+        }
+
+        $results = $response['value'];
+
+        if (isset($response['@odata.nextLink'])) {
+            $results = [
+                ...$response['value'],
+                ...$this->requestAllItems($response['@odata.nextLink'])
+            ];
+        }
+
+        return $results;
+    }
+
 }
