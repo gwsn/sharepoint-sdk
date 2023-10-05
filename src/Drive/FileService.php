@@ -197,10 +197,10 @@ class FileService
     /**
      * @param string|null $path
      * @param string|null $itemId
-     * @return int
+     * @return string
      * @throws Exception
      */
-    public function checkFileMimeType(?string $path = null, ?string $itemId = null): int
+    public function checkFileMimeType(?string $path = null, ?string $itemId = null): string
     {
         // Will throw exception if file not exists
         $fileMetaData = $this->requestFileMetadata($path, $itemId);
