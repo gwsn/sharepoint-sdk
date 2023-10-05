@@ -110,6 +110,27 @@ class FileService
     }
 
     /**
+     * Use the ItemId to retrieve the URL to stream a file
+     *
+     * @param string|null $path
+     * @param string|null $itemId
+     * @return string
+     * @throws Exception
+     */
+    public function requestFileStreamUrl(?string $path = null, ?string $itemId = null): string
+    {
+        $url = $this->getFileBaseUrl($path, $itemId, '?select=@microsoft.graph.downloadUrl');
+
+        $response = $this->apiConnector->request('GET', $url);
+
+        if (! isset($response['@microsoft.graph.downloadUrl'])) {
+            throw new \Exception('Microsoft SP Drive Request: Cannot parse the body of the sharepoint drive request. ' . __FUNCTION__, 2221);
+        }
+
+        return $response['@microsoft.graph.downloadUrl'];
+    }
+
+    /**
      * @param string|null $path
      * @param string|null $itemId
      * @return array
